@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Japanese Vocabulary Quiz</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Japanese Vocabulary Quiz</h1>
+            <div id="stats-summary"></div>
+        </header>
+
+        <!-- File Upload Section -->
+        <div id="upload-section" class="section">
+            <h2>Upload Vocabulary File</h2>
+            <input type="file" id="file-input" accept=".txt">
+            <p class="info">Please upload a tab-separated .txt file with format: kanji → romaji → english</p>
+        </div>
+
+        <!-- Mode Selection -->
+        <div id="mode-selection" class="section hidden">
+            <h2>Select Study Mode</h2>
+            <div class="mode-buttons">
+                <button id="flashcard-btn" class="mode-btn">📚 Flashcards</button>
+                <button id="unit-test-btn" class="mode-btn">📝 Unit Test</button>
+                <button id="subset-test-btn" class="mode-btn">✏️ Subset Test</button>
+                <button id="stats-btn" class="mode-btn">📊 Statistics</button>
+            </div>
+        </div>
+
+        <!-- Unit/Subset Selection -->
+        <div id="selection-section" class="section hidden">
+            <h2 id="selection-title">Select Unit</h2>
+            <div id="selection-buttons"></div>
+            <button id="back-to-mode" class="back-btn">← Back</button>
+        </div>
+
+        <!-- Flashcard Mode -->
+        <div id="flashcard-section" class="section hidden">
+            <div class="progress-bar">
+                <div id="flashcard-progress" class="progress-fill"></div>
+            </div>
+            <div class="card-counter" id="card-counter"></div>
+            
+            <div class="flashcard" id="flashcard">
+                <div class="flashcard-inner">
+                    <div class="flashcard-front">
+                        <div class="card-type">Japanese</div>
+                        <div id="flashcard-question" class="flashcard-text"></div>
+                    </div>
+                    <div class="flashcard-back">
+                        <div class="card-type">Answer</div>
+                        <div id="flashcard-answer" class="flashcard-text"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flashcard-controls">
+                <button id="prev-card" class="nav-btn">← Previous</button>
+                <button id="flip-card" class="flip-btn">Flip Card</button>
+                <button id="next-card" class="nav-btn">Next →</button>
+            </div>
+            
+            <div class="difficulty-buttons">
+                <button class="diff-btn hard" id="hard-btn">Hard</button>
+                <button class="diff-btn medium" id="medium-btn">Medium</button>
+                <button class="diff-btn easy" id="easy-btn">Easy</button>
+            </div>
+            
+            <button id="exit-flashcard" class="back-btn">← Exit Flashcards</button>
+        </div>
+
+        <!-- Test Mode -->
+        <div id="test-section" class="section hidden">
+            <div class="progress-bar">
+                <div id="test-progress" class="progress-fill"></div>
+            </div>
+            <div class="test-counter" id="test-counter"></div>
+            
+            <div class="test-card">
+                <h3 id="test-question"></h3>
+                <input type="text" id="test-input" placeholder="Type your answer...">
+                <div id="test-feedback" class="feedback hidden"></div>
+                <button id="submit-answer" class="submit-btn">Submit</button>
+                <button id="next-question" class="next-btn hidden">Next Question</button>
+            </div>
+            
+            <button id="exit-test" class="back-btn">← Exit Test</button>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="section hidden">
+            <h2>Test Results</h2>
+            <div id="results-content"></div>
+            <button id="back-to-selection" class="back-btn">← Back to Selection</button>
+        </div>
+
+        <!-- Statistics Section -->
+        <div id="statistics-section" class="section hidden">
+            <h2>Your Statistics</h2>
+            <div class="stats-filters">
+                <button id="filter-all" class="filter-btn active">All Words</button>
+                <button id="filter-mastered" class="filter-btn">Mastered</button>
+                <button id="filter-learning" class="filter-btn">Learning</button>
+                <button id="filter-difficult" class="filter-btn">Difficult</button>
+            </div>
+            <div id="stats-content"></div>
+            <button id="reset-stats-btn" class="danger-btn">Reset All Statistics</button>
+            <button id="exit-stats" class="back-btn">← Back</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
