@@ -27,6 +27,8 @@
                 <button id="flashcard-btn" class="mode-btn">📚 Flashcards</button>
                 <button id="unit-test-btn" class="mode-btn">📝 Unit Test</button>
                 <button id="subset-test-btn" class="mode-btn">✏️ Subset Test</button>
+                <button id="train-weak-btn" class="mode-btn">💪 Train Weak Skills</button>
+                <button id="review-old-btn" class="mode-btn">🔄 Review Old Words</button>
                 <button id="stats-btn" class="mode-btn">📊 Statistics</button>
             </div>
         </div>
@@ -82,9 +84,8 @@
             
             <div class="test-card">
                 <h3 id="test-question"></h3>
-                <input type="text" id="test-input" placeholder="Type your answer...">
+                <div id="test-choices" class="test-choices"></div>
                 <div id="test-feedback" class="feedback hidden"></div>
-                <button id="submit-answer" class="submit-btn">Submit</button>
                 <button id="next-question" class="next-btn hidden">Next Question</button>
             </div>
             
