@@ -7,9 +7,12 @@ let currentCardIndex = 0;
 let currentTestIndex = 0;
 let testAnswers = [];
 let testStartTime = null;
+let currentWords = [];
+let currentQuestionType = null; // 'kanji' or 'romaji'
 
-// Statistics Storage Key
+// Statistics Storage Keys
 const STATS_KEY = 'japaneseVocabStats';
+const UNIT_SCORES_KEY = 'japaneseUnitScores';
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
@@ -26,6 +29,8 @@ function initializeEventListeners() {
     document.getElementById('flashcard-btn').addEventListener('click', () => selectMode('flashcard'));
     document.getElementById('unit-test-btn').addEventListener('click', () => selectMode('unit-test'));
     document.getElementById('subset-test-btn').addEventListener('click', () => selectMode('subset-test'));
+    document.getElementById('train-weak-btn').addEventListener('click', () => selectMode('train-weak'));
+    document.getElementById('review-old-btn').addEventListener('click', () => selectMode('review-old'));
     document.getElementById('stats-btn').addEventListener('click', showStatistics);
     
     // Flashcard controls
@@ -40,13 +45,7 @@ function initializeEventListeners() {
     document.getElementById('hard-btn').addEventListener('click', () => recordDifficulty('hard'));
     
     // Test controls
-    document.getElementById('submit-answer').addEventListener('click', submitAnswer);
     document.getElementById('next-question').addEventListener('click', nextQuestion);
-    document.getElementById('test-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !document.getElementById('submit-answer').classList.contains('hidden')) {
-            submitAnswer();
-        }
-    });
     
     // Navigation
     document.getElementById('back-to-mode').addEventListener('click', showModeSelection);
@@ -112,6 +111,10 @@ function selectMode(mode) {
         showUnitSelection();
     } else if (mode === 'subset-test') {
         showSubsetSelection();
+    } else if (mode === 'train-weak') {
+        startTrainWeak();
+    } else if (mode === 'review-old') {
+        startReviewOld();
     }
 }
 
@@ -126,11 +129,20 @@ function showUnitSelection() {
     buttons.innerHTML = '';
     
     const numUnits = Math.ceil(vocabulary.length / 50);
+    const unitScores = getUnitScores();
+    
     for (let i = 0; i < numUnits; i++) {
         const btn = document.createElement('button');
         const start = i * 50;
         const end = Math.min((i + 1) * 50, vocabulary.length);
-        btn.textContent = `Unit ${i + 1} (${start + 1}-${end})`;
+        const unitKey = `unit-${i}`;
+        const topScore = unitScores[unitKey] || null;
+        
+        btn.innerHTML = `Unit ${i + 1} (${start + 1}-${end})`;
+        if (topScore !== null) {
+            btn.innerHTML += `<span class="unit-score">Top: ${topScore}%</span>`;
+        }
+        
         btn.addEventListener('click', () => selectUnit(i));
         buttons.appendChild(btn);
     }
@@ -171,7 +183,7 @@ function selectUnit(unitIndex) {
     if (currentMode === 'flashcard') {
         startFlashcards(words);
     } else if (currentMode === 'unit-test') {
-        startTest(words);
+        startTest(words, unitIndex);
     }
 }
 
@@ -183,6 +195,55 @@ function selectSubset(subsetIndex) {
     const words = vocabulary.slice(start, end);
     
     startTest(words);
+}
+
+// Train Weak Skills
+function startTrainWeak() {
+    const allStats = loadStatistics();
+    const weakWords = [];
+    
+    vocabulary.forEach(word => {
+        const stats = allStats[word.kanji];
+        if (stats && getMasteryLevel(stats) === 'difficult') {
+            weakWords.push(word);
+        }
+    });
+    
+    if (weakWords.length === 0) {
+        alert('No weak words found! Try taking some tests first.');
+        showModeSelection();
+        return;
+    }
+    
+    // Shuffle and take up to 20 weak words
+    const shuffled = weakWords.sort(() => 0.5 - Math.random()).slice(0, 20);
+    startTest(shuffled);
+}
+
+// Review Old Words
+function startReviewOld() {
+    const allStats = loadStatistics();
+    const oldWords = [];
+    const now = Date.now();
+    const weekAgo = now - (7 * 24 * 60 * 60 * 1000);
+    
+    vocabulary.forEach(word => {
+        const stats = allStats[word.kanji];
+        if (stats && stats.lastTested && stats.lastTested < weekAgo) {
+            oldWords.push({ word, lastTested: stats.lastTested });
+        }
+    });
+    
+    if (oldWords.length === 0) {
+        alert('No old words to review! All words have been tested recently.');
+        showModeSelection();
+        return;
+    }
+    
+    // Sort by oldest first and take up to 20
+    oldWords.sort((a, b) => a.lastTested - b.lastTested);
+    const wordsToReview = oldWords.slice(0, 20).map(item => item.word);
+    startTest(wordsToReview);
 }
 
 // Start Flashcards
@@ -262,11 +323,12 @@ function updateFlashcardProgress() {
     document.getElementById('flashcard-progress').style.width = progress + '%';
 }
 
-// Start Test
-function startTest(words) {
+// Start Test (Multiple Choice)
+function startTest(words, unitIndex = null) {
     hideAllSections();
     currentTestIndex = 0;
     currentWords = words;
+    currentUnit = unitIndex;
     testAnswers = [];
     testStartTime = Date.now();
     
@@ -274,38 +336,73 @@ function startTest(words) {
     displayQuestion();
 }
 
-// Display Question
+// Display Question (Multiple Choice)
 function displayQuestion() {
     const word = currentWords[currentTestIndex];
-    document.getElementById('test-question').textContent = `What is the English meaning of: ${word.kanji} (${word.romaji})?`;
-    document.getElementById('test-input').value = '';
+    
+    // Randomly choose to test kanji or romaji
+    currentQuestionType = Math.random() < 0.5 ? 'kanji' : 'romaji';
+    
+    const questionText = currentQuestionType === 'kanji' 
+        ? `What is the English meaning of: ${word.kanji}`
+        : `What is the English meaning of: ${word.romaji}`;
+    
+    document.getElementById('test-question').textContent = questionText;
+    
+    // Generate multiple choice options
+    const choices = generateChoices(word);
+    const choicesContainer = document.getElementById('test-choices');
+    choicesContainer.innerHTML = '';
+    
+    choices.forEach((choice, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.textContent = choice;
+        btn.addEventListener('click', () => selectAnswer(choice, word.english, btn));
+        choicesContainer.appendChild(btn);
+    });
+    
     document.getElementById('test-feedback').classList.add('hidden');
-    document.getElementById('submit-answer').classList.remove('hidden');
     document.getElementById('next-question').classList.add('hidden');
-    document.getElementById('test-input').focus();
     
     updateTestCounter();
     updateTestProgress();
 }
 
-// Submit Answer
-function submitAnswer() {
-    const word = currentWords[currentTestIndex];
-    const userAnswer = document.getElementById('test-input').value.trim().toLowerCase();
-    const correctAnswer = word.english.toLowerCase();
+// Generate Multiple Choice Options
+function generateChoices(correctWord) {
+    const choices = [correctWord.english];
+    const usedIndices = new Set([currentWords.indexOf(correctWord)]);
     
+    // Get 3 random wrong answers from vocabulary
+    while (choices.length < 4) {
+        const randomIndex = Math.floor(Math.random() * vocabulary.length);
+        if (!usedIndices.has(randomIndex)) {
+            choices.push(vocabulary[randomIndex].english);
+            usedIndices.add(randomIndex);
+        }
+    }
+    
+    // Shuffle choices
+    return choices.sort(() => Math.random() - 0.5);
+}
+
+// Select Answer
+function selectAnswer(selectedAnswer, correctAnswer, button) {
+    const word = currentWords[currentTestIndex];
     const answerStartTime = testStartTime || Date.now();
     const timeTaken = Date.now() - answerStartTime;
     testStartTime = Date.now();
     
-    const isCorrect = userAnswer === correctAnswer || 
-                     correctAnswer.split(',').some(ans => ans.trim() === userAnswer);
+    // Normalize answers for comparison
+    const isCorrect = selectedAnswer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
     
     testAnswers.push({
         word: word,
-        userAnswer: userAnswer,
+        userAnswer: selectedAnswer,
         correct: isCorrect,
-        timeTaken: timeTaken
+        timeTaken: timeTaken,
+        questionType: currentQuestionType
     });
     
     // Update statistics
@@ -324,6 +421,21 @@ function submitAnswer() {
     
     saveWordStats(word.kanji, stats);
     
+    // Disable all buttons and show feedback
+    const allButtons = document.querySelectorAll('.choice-btn');
+    allButtons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === correctAnswer) {
+            btn.classList.add('correct');
+        }
+    });
+    
+    if (isCorrect) {
+        button.classList.add('selected');
+    } else {
+        button.classList.add('incorrect');
+    }
+    
     // Show feedback
     const feedback = document.getElementById('test-feedback');
     feedback.classList.remove('hidden', 'correct', 'incorrect');
@@ -333,10 +445,9 @@ function submitAnswer() {
         feedback.textContent = '✓ Correct!';
     } else {
         feedback.classList.add('incorrect');
-        feedback.textContent = `✗ Incorrect. The answer is: ${word.english}`;
+        feedback.textContent = `✗ Incorrect. The answer is: ${correctAnswer}`;
     }
     
-    document.getElementById('submit-answer').classList.add('hidden');
     document.getElementById('next-question').classList.remove('hidden');
 }
 
@@ -370,6 +481,11 @@ function showResults() {
     const correctCount = testAnswers.filter(a => a.correct).length;
     const percentage = Math.round((correctCount / testAnswers.length) * 100);
     
+    // Save unit score if this was a unit test
+    if (currentUnit !== null) {
+        saveUnitScore(currentUnit, percentage);
+    }
+    
     let resultsHTML = `
         <div class="results-summary">
             <h3>Test Complete!</h3>
@@ -383,12 +499,16 @@ function showResults() {
     testAnswers.forEach((answer, index) => {
         const className = answer.correct ? 'correct' : 'incorrect';
         const timeSeconds = (answer.timeTaken / 1000).toFixed(1);
+        const questionDisplay = answer.questionType === 'kanji' 
+            ? answer.word.kanji 
+            : answer.word.romaji;
+        
         resultsHTML += `
             <div class="result-item ${className}">
                 <div>
-                    <strong>${answer.word.kanji}</strong> (${answer.word.romaji})
+                    <strong>${questionDisplay}</strong>
                     <br>
-                    <small>Your answer: ${answer.userAnswer || '(no answer)'}</small>
+                    <small>Your answer: ${answer.userAnswer}</small>
                     ${!answer.correct ? `<br><small>Correct: ${answer.word.english}</small>` : ''}
                 </div>
                 <div>${timeSeconds}s</div>
@@ -399,6 +519,21 @@ function showResults() {
     resultsHTML += '</div>';
     document.getElementById('results-content').innerHTML = resultsHTML;
     document.getElementById('results-section').classList.remove('hidden');
+}
+
+// Unit Score Functions
+function getUnitScores() {
+    return JSON.parse(localStorage.getItem(UNIT_SCORES_KEY) || '{}');
+}
+
+function saveUnitScore(unitIndex, percentage) {
+    const scores = getUnitScores();
+    const unitKey = `unit-${unitIndex}`;
+    
+    if (!scores[unitKey] || percentage > scores[unitKey]) {
+        scores[unitKey] = percentage;
+        localStorage.setItem(UNIT_SCORES_KEY, JSON.stringify(scores));
+    }
 }
 
 // Statistics Functions
@@ -457,7 +592,7 @@ function displayStatistics(filter) {
     });
     
     if (wordsToShow.length === 0) {
-        statsHTML = '<p style="text-align: center; color: #666;">No statistics available for this filter.</p>';
+        statsHTML = '<p style="text-align: center; color: #7a7a7a;">No statistics available for this filter.</p>';
     } else {
         wordsToShow.forEach(({ word, stats, masteryLevel }) => {
             const accuracy = stats && stats.testCount > 0 
@@ -514,6 +649,7 @@ function filterStats(filter) {
 function resetStatistics() {
     if (confirm('Are you sure you want to reset all statistics? This cannot be undone.')) {
         localStorage.removeItem(STATS_KEY);
+        localStorage.removeItem(UNIT_SCORES_KEY);
         updateStatsSummary();
         displayStatistics('all');
         alert('All statistics have been reset.');
@@ -550,8 +686,7 @@ function backToSelection() {
         showUnitSelection();
     } else if (currentMode === 'subset-test') {
         showSubsetSelection();
+    } else {
+        showModeSelection();
     }
 }
-
-// Current words being studied
-let currentWords = [];
