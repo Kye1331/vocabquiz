@@ -13,23 +13,15 @@
             <div id="stats-summary"></div>
         </header>
 
-        <!-- File Upload Section -->
-        <div id="upload-section" class="section">
-            <h2>Upload Vocabulary File</h2>
-            <input type="file" id="file-input" accept=".txt">
-            <p class="info">Please upload a tab-separated .txt file with format: kanji → romaji → english</p>
-        </div>
-
         <!-- Mode Selection -->
-        <div id="mode-selection" class="section hidden">
+        <div id="mode-selection" class="section">
             <h2>Select Study Mode</h2>
             <div class="mode-buttons">
                 <button id="flashcard-btn" class="mode-btn">📚 Flashcards</button>
                 <button id="unit-test-btn" class="mode-btn">📝 Unit Test</button>
                 <button id="subset-test-btn" class="mode-btn">✏️ Subset Test</button>
-                <button id="train-weak-btn" class="mode-btn">💪 Train Weak Skills</button>
-                <button id="review-old-btn" class="mode-btn">🔄 Review Old Words</button>
                 <button id="stats-btn" class="mode-btn">📊 Statistics</button>
+                <button id="unfamiliar-btn" class="mode-btn">⚠️ Unfamiliar Words</button>
             </div>
         </div>
 
@@ -70,6 +62,7 @@
                 <button class="diff-btn hard" id="hard-btn">Hard</button>
                 <button class="diff-btn medium" id="medium-btn">Medium</button>
                 <button class="diff-btn easy" id="easy-btn">Easy</button>
+                <button class="uncertain-btn" id="uncertain-btn">⚠️ Mark Uncertain</button>
             </div>
             
             <button id="exit-flashcard" class="back-btn">← Exit Flashcards</button>
@@ -83,10 +76,16 @@
             <div class="test-counter" id="test-counter"></div>
             
             <div class="test-card">
+                <div class="question-type-badge" id="question-type-badge"></div>
                 <h3 id="test-question"></h3>
-                <div id="test-choices" class="test-choices"></div>
+                <div id="test-input-container">
+                    <input type="text" id="test-input" placeholder="Type your answer...">
+                </div>
+                <div id="multiple-choice-container" class="hidden"></div>
                 <div id="test-feedback" class="feedback hidden"></div>
+                <button id="submit-answer" class="submit-btn">Submit</button>
                 <button id="next-question" class="next-btn hidden">Next Question</button>
+                <button id="mark-uncertain-test" class="uncertain-test-btn hidden">⚠️ Mark as Uncertain</button>
             </div>
             
             <button id="exit-test" class="back-btn">← Exit Test</button>
@@ -111,6 +110,15 @@
             <div id="stats-content"></div>
             <button id="reset-stats-btn" class="danger-btn">Reset All Statistics</button>
             <button id="exit-stats" class="back-btn">← Back</button>
+        </div>
+
+        <!-- Unfamiliar Words Section -->
+        <div id="unfamiliar-section" class="section hidden">
+            <h2>Unfamiliar Words</h2>
+            <p class="info">Words you've marked as uncertain will appear here. Study these to improve!</p>
+            <div id="unfamiliar-content"></div>
+            <button id="clear-unfamiliar-btn" class="danger-btn">Clear Unfamiliar List</button>
+            <button id="exit-unfamiliar" class="back-btn">← Back</button>
         </div>
     </div>
 
