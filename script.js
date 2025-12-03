@@ -367,6 +367,9 @@ function displayQuestion() {
     const word = currentWords[currentTestIndex];
     currentQuestionType = getRandomQuestionType();
     
+    // Randomly decide whether to show kanji or romaji
+    const showKanji = Math.random() < 0.5;
+    
     const badge = document.getElementById('question-type-badge');
     const questionEl = document.getElementById('test-question');
     const inputContainer = document.getElementById('test-input-container');
@@ -384,7 +387,12 @@ function displayQuestion() {
     if (currentQuestionType === 'multiple-choice') {
         badge.textContent = 'Multiple Choice';
         badge.className = 'question-type-badge mc-badge';
-        questionEl.textContent = `What is the English meaning of: ${word.kanji} (${word.romaji})?`;
+        
+        if (showKanji) {
+            questionEl.textContent = `What is the English meaning of: ${word.kanji}?`;
+        } else {
+            questionEl.textContent = `What is the English meaning of: ${word.romaji}?`;
+        }
         
         // Generate wrong answers
         const wrongAnswers = vocabulary
@@ -409,7 +417,13 @@ function displayQuestion() {
     } else { // short-answer-to-english - ALWAYS asks for English translation
         badge.textContent = 'Short Answer';
         badge.className = 'question-type-badge sa-badge';
-        questionEl.textContent = `What is the English meaning of: ${word.kanji} (${word.romaji})?`;
+        
+        if (showKanji) {
+            questionEl.textContent = `What is the English meaning of: ${word.kanji}?`;
+        } else {
+            questionEl.textContent = `What is the English meaning of: ${word.romaji}?`;
+        }
+        
         input.value = '';
         input.placeholder = 'Type English translation...';
         inputContainer.classList.remove('hidden');
