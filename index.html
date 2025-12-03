@@ -13,8 +13,15 @@
             <div id="stats-summary"></div>
         </header>
 
+        <!-- File Upload Section -->
+        <div id="upload-section" class="section">
+            <h2>Upload Vocabulary File</h2>
+            <input type="file" id="file-input" accept=".txt">
+            <p class="info">Please upload a tab-separated .txt file with format: kanji → romaji → english</p>
+        </div>
+
         <!-- Mode Selection -->
-        <div id="mode-selection" class="section">
+        <div id="mode-selection" class="section hidden">
             <h2>Select Study Mode</h2>
             <div class="mode-buttons">
                 <button id="flashcard-btn" class="mode-btn">📚 Flashcards</button>
@@ -22,7 +29,6 @@
                 <button id="subset-test-btn" class="mode-btn">✏️ Subset Test</button>
                 <button id="train-weak-btn" class="mode-btn">💪 Train Weak Skills</button>
                 <button id="review-old-btn" class="mode-btn">🔄 Review Old Words</button>
-                <button id="quick-practice-btn" class="mode-btn">⚡ Quick Practice (10)</button>
                 <button id="stats-btn" class="mode-btn">📊 Statistics</button>
             </div>
         </div>
@@ -79,7 +85,6 @@
             <div class="test-card">
                 <h3 id="test-question"></h3>
                 <div id="test-choices" class="test-choices"></div>
-                <button id="unfamiliar-btn" class="unfamiliar-btn">❓ I don't know this word</button>
                 <div id="test-feedback" class="feedback hidden"></div>
                 <button id="next-question" class="next-btn hidden">Next Question</button>
             </div>
@@ -91,45 +96,19 @@
         <div id="results-section" class="section hidden">
             <h2>Test Results</h2>
             <div id="results-content"></div>
-            <div class="results-actions">
-                <button id="retry-incorrect" class="action-btn hidden">🔁 Retry Incorrect</button>
-                <button id="back-to-selection" class="back-btn">← Back to Selection</button>
-            </div>
+            <button id="back-to-selection" class="back-btn">← Back to Selection</button>
         </div>
 
         <!-- Statistics Section -->
         <div id="statistics-section" class="section hidden">
             <h2>Your Statistics</h2>
-            <div class="stats-summary-cards">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-studied">0</div>
-                    <div class="stat-label">Words Studied</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-mastered">0</div>
-                    <div class="stat-label">Mastered</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="accuracy-rate">0%</div>
-                    <div class="stat-label">Accuracy Rate</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="study-streak">0</div>
-                    <div class="stat-label">Day Streak</div>
-                </div>
-            </div>
             <div class="stats-filters">
                 <button id="filter-all" class="filter-btn active">All Words</button>
                 <button id="filter-mastered" class="filter-btn">Mastered</button>
                 <button id="filter-learning" class="filter-btn">Learning</button>
                 <button id="filter-difficult" class="filter-btn">Difficult</button>
-                <button id="filter-unfamiliar" class="filter-btn">Unfamiliar</button>
-            </div>
-            <div class="search-box">
-                <input type="text" id="word-search" placeholder="Search for a word...">
             </div>
             <div id="stats-content"></div>
-            <button id="export-stats-btn" class="action-btn">📥 Export Statistics</button>
             <button id="reset-stats-btn" class="danger-btn">Reset All Statistics</button>
             <button id="exit-stats" class="back-btn">← Back</button>
         </div>
