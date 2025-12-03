@@ -115,6 +115,8 @@ function selectMode(mode) {
         startTrainWeak();
     } else if (mode === 'review-old') {
         startReviewOld();
+    } else if (mode === 'quick-practice') {
+        startQuickPractice();
     }
 }
 
@@ -246,6 +248,12 @@ function startReviewOld() {
     startTest(wordsToReview);
 }
 
+// Quick Practice - Random 10 words
+function startQuickPractice() {
+    const shuffled = [...vocabulary].sort(() => 0.5 - Math.random()).slice(0, 10);
+    startTest(shuffled);
+}
+
 // Start Flashcards
 function startFlashcards(words) {
     hideAllSections();
@@ -364,6 +372,8 @@ function displayQuestion() {
     
     document.getElementById('test-feedback').classList.add('hidden');
     document.getElementById('next-question').classList.add('hidden');
+    document.getElementById('unfamiliar-btn').classList.remove('hidden');
+    document.getElementById('unfamiliar-btn').disabled = false;
     
     updateTestCounter();
     updateTestProgress();
@@ -402,8 +412,14 @@ function selectAnswer(selectedAnswer, correctAnswer, button) {
         userAnswer: selectedAnswer,
         correct: isCorrect,
         timeTaken: timeTaken,
-        questionType: currentQuestionType
+        questionType: currentQuestionType,
+        unfamiliar: false
     });
+    
+    // Track incorrect words for retry feature
+    if (!isCorrect) {
+        incorrectWords.push(word);
+    }
     
     // Update statistics
     const stats = getWordStats(word.kanji);
@@ -448,6 +464,51 @@ function selectAnswer(selectedAnswer, correctAnswer, button) {
         feedback.textContent = `✗ Incorrect. The answer is: ${correctAnswer}`;
     }
     
+    document.getElementById('unfamiliar-btn').classList.add('hidden');
+    document.getElementById('next-question').classList.remove('hidden');
+}
+
+// Mark as Unfamiliar
+function markUnfamiliar() {
+    const word = currentWords[currentTestIndex];
+    const timeTaken = Date.now() - (testStartTime || Date.now());
+    
+    testAnswers.push({
+        word: word,
+        userAnswer: 'unfamiliar',
+        correct: false,
+        timeTaken: timeTaken,
+        questionType: currentQuestionType,
+        unfamiliar: true
+    });
+    
+    incorrectWords.push(word);
+    
+    // Update statistics - mark as unfamiliar
+    const stats = getWordStats(word.kanji);
+    stats.testCount++;
+    stats.lastTested = Date.now();
+    stats.incorrectCount++;
+    stats.consecutiveCorrect = 0;
+    stats.unfamiliar = true;
+    
+    saveWordStats(word.kanji, stats);
+    
+    // Show the correct answer
+    const allButtons = document.querySelectorAll('.choice-btn');
+    allButtons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === word.english) {
+            btn.classList.add('correct');
+        }
+    });
+    
+    const feedback = document.getElementById('test-feedback');
+    feedback.classList.remove('hidden');
+    feedback.classList.add('incorrect');
+    feedback.textContent = `The correct answer is: ${word.english} (${word.kanji} - ${word.romaji})`;
+    
+    document.getElementById('unfamiliar-btn').disabled = true;
     document.getElementById('next-question').classList.remove('hidden');
 }
 
@@ -503,12 +564,16 @@ function showResults() {
             ? answer.word.kanji 
             : answer.word.romaji;
         
+        let answerDisplay = answer.unfamiliar 
+            ? '(Marked as unfamiliar)' 
+            : answer.userAnswer;
+        
         resultsHTML += `
             <div class="result-item ${className}">
                 <div>
                     <strong>${questionDisplay}</strong>
                     <br>
-                    <small>Your answer: ${answer.userAnswer}</small>
+                    <small>Your answer: ${answerDisplay}</small>
                     ${!answer.correct ? `<br><small>Correct: ${answer.word.english}</small>` : ''}
                 </div>
                 <div>${timeSeconds}s</div>
@@ -518,7 +583,25 @@ function showResults() {
     
     resultsHTML += '</div>';
     document.getElementById('results-content').innerHTML = resultsHTML;
+    
+    // Show retry button if there were incorrect answers
+    const retryBtn = document.getElementById('retry-incorrect');
+    if (incorrectWords.length > 0) {
+        retryBtn.classList.remove('hidden');
+    } else {
+        retryBtn.classList.add('hidden');
+    }
+    
     document.getElementById('results-section').classList.remove('hidden');
+}
+
+// Retry Incorrect Words
+function retryIncorrect() {
+    if (incorrectWords.length === 0) return;
+    
+    const wordsToRetry = [...incorrectWords];
+    incorrectWords = [];
+    startTest(wordsToRetry);
 }
 
 // Unit Score Functions
@@ -547,7 +630,8 @@ function getWordStats(kanji) {
         consecutiveCorrect: 0,
         totalTime: 0,
         lastTested: null,
-        lastReviewed: null
+        lastReviewed: null,
+        unfamiliar: false
     };
 }
 
@@ -566,12 +650,40 @@ function loadStatistics() {
 function showStatistics() {
     hideAllSections();
     displayStatistics('all');
+    updateStatsSummaryCards();
     document.getElementById('statistics-section').classList.remove('hidden');
+}
+
+function updateStatsSummaryCards() {
+    const allStats = loadStatistics();
+    const testedWords = Object.keys(allStats).length;
+    
+    let masteredCount = 0;
+    let totalCorrect = 0;
+    let totalTests = 0;
+    
+    Object.keys(allStats).forEach(kanji => {
+        const stats = allStats[kanji];
+        if (getMasteryLevel(stats) === 'mastered') {
+            masteredCount++;
+        }
+        totalCorrect += stats.correctCount;
+        totalTests += stats.testCount;
+    });
+    
+    const accuracyRate = totalTests > 0 ? Math.round((totalCorrect / totalTests) * 100) : 0;
+    const streak = getStudyStreak();
+    
+    document.getElementById('total-studied').textContent = testedWords;
+    document.getElementById('total-mastered').textContent = masteredCount;
+    document.getElementById('accuracy-rate').textContent = accuracyRate + '%';
+    document.getElementById('study-streak').textContent = streak;
 }
 
 function displayStatistics(filter) {
     const allStats = loadStatistics();
     const statsContent = document.getElementById('stats-content');
+    const searchQuery = document.getElementById('word-search').value.toLowerCase();
     
     let statsHTML = '';
     let wordsToShow = [];
@@ -579,20 +691,30 @@ function displayStatistics(filter) {
     vocabulary.forEach(word => {
         const stats = allStats[word.kanji] || null;
         
+        // Apply search filter
+        if (searchQuery && 
+            !word.kanji.toLowerCase().includes(searchQuery) &&
+            !word.romaji.toLowerCase().includes(searchQuery) &&
+            !word.english.toLowerCase().includes(searchQuery)) {
+            return;
+        }
+        
         if (!stats && filter !== 'all') return;
         
         const masteryLevel = getMasteryLevel(stats);
+        const isUnfamiliar = stats && stats.unfamiliar;
         
         if (filter === 'all' || 
             (filter === 'mastered' && masteryLevel === 'mastered') ||
             (filter === 'learning' && masteryLevel === 'learning') ||
-            (filter === 'difficult' && masteryLevel === 'difficult')) {
+            (filter === 'difficult' && masteryLevel === 'difficult') ||
+            (filter === 'unfamiliar' && isUnfamiliar)) {
             wordsToShow.push({ word, stats, masteryLevel });
         }
     });
     
     if (wordsToShow.length === 0) {
-        statsHTML = '<p style="text-align: center; color: #7a7a7a;">No statistics available for this filter.</p>';
+        statsHTML = '<p style="text-align: center; color: #7a7a7a;">No words match your search.</p>';
     } else {
         wordsToShow.forEach(({ word, stats, masteryLevel }) => {
             const accuracy = stats && stats.testCount > 0 
@@ -602,11 +724,16 @@ function displayStatistics(filter) {
                 ? (stats.totalTime / stats.testCount / 1000).toFixed(1)
                 : 0;
             
+            const unfamiliarBadge = stats && stats.unfamiliar 
+                ? '<span class="stat-badge unfamiliar">unfamiliar</span>' 
+                : '';
+            
             statsHTML += `
                 <div class="stat-item">
                     <h4>
                         ${word.kanji} (${word.romaji}) - ${word.english}
                         <span class="stat-badge ${masteryLevel}">${masteryLevel}</span>
+                        ${unfamiliarBadge}
                     </h4>
                     <div class="stat-details">
                         <div>Tests: ${stats ? stats.testCount : 0}</div>
@@ -622,6 +749,12 @@ function displayStatistics(filter) {
     }
     
     statsContent.innerHTML = statsHTML;
+}
+
+function searchWords() {
+    const activeFilter = document.querySelector('.filter-btn.active');
+    const filter = activeFilter ? activeFilter.id.replace('filter-', '') : 'all';
+    displayStatistics(filter);
 }
 
 function getMasteryLevel(stats) {
@@ -650,9 +783,77 @@ function resetStatistics() {
     if (confirm('Are you sure you want to reset all statistics? This cannot be undone.')) {
         localStorage.removeItem(STATS_KEY);
         localStorage.removeItem(UNIT_SCORES_KEY);
+        localStorage.removeItem(STREAK_KEY);
         updateStatsSummary();
+        updateStatsSummaryCards();
         displayStatistics('all');
         alert('All statistics have been reset.');
+    }
+}
+
+function exportStatistics() {
+    const allStats = loadStatistics();
+    const exportData = [];
+    
+    vocabulary.forEach(word => {
+        const stats = allStats[word.kanji];
+        if (stats) {
+            exportData.push({
+                kanji: word.kanji,
+                romaji: word.romaji,
+                english: word.english,
+                testCount: stats.testCount,
+                correctCount: stats.correctCount,
+                incorrectCount: stats.incorrectCount,
+                accuracy: stats.testCount > 0 ? Math.round((stats.correctCount / stats.testCount) * 100) : 0,
+                masteryLevel: getMasteryLevel(stats),
+                unfamiliar: stats.unfamiliar || false
+            });
+        }
+    });
+    
+    const csv = convertToCSV(exportData);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vocabulary-stats-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
+function convertToCSV(data) {
+    if (data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]).join(',');
+    const rows = data.map(obj => Object.values(obj).join(','));
+    return headers + '\n' + rows.join('\n');
+}
+
+// Study Streak Functions
+function getStudyStreak() {
+    const streakData = JSON.parse(localStorage.getItem(STREAK_KEY) || '{"lastStudy": null, "streak": 0}');
+    return streakData.streak;
+}
+
+function updateStudyStreak() {
+    const streakData = JSON.parse(localStorage.getItem(STREAK_KEY) || '{"lastStudy": null, "streak": 0}');
+    const today = new Date().toDateString();
+    const lastStudy = streakData.lastStudy ? new Date(streakData.lastStudy).toDateString() : null;
+    
+    if (lastStudy !== today) {
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
+        
+        if (lastStudy === yesterday) {
+            streakData.streak++;
+        } else if (lastStudy === null) {
+            streakData.streak = 1;
+        } else {
+            streakData.streak = 1;
+        }
+        
+        streakData.lastStudy = new Date().toISOString();
+        localStorage.setItem(STREAK_KEY, JSON.stringify(streakData));
     }
 }
 
