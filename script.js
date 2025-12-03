@@ -15,7 +15,7 @@ const STATS_KEY = 'japaneseVocabStats';
 const UNFAMILIAR_KEY = 'japaneseVocabUnfamiliar';
 
 // Question Types
-const QUESTION_TYPES = ['multiple-choice', 'short-answer-to-english', 'short-answer-to-japanese'];
+const QUESTION_TYPES = ['multiple-choice', 'short-answer-to-english'];
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
@@ -406,21 +406,12 @@ function displayQuestion() {
         
         mcContainer.classList.remove('hidden');
         
-    } else if (currentQuestionType === 'short-answer-to-english') {
-        badge.textContent = 'Translate to English';
+    } else { // short-answer-to-english - ALWAYS asks for English translation
+        badge.textContent = 'Short Answer';
         badge.className = 'question-type-badge sa-badge';
-        questionEl.textContent = `Translate to English: ${word.kanji} (${word.romaji})`;
+        questionEl.textContent = `What is the English meaning of: ${word.kanji} (${word.romaji})?`;
         input.value = '';
         input.placeholder = 'Type English translation...';
-        inputContainer.classList.remove('hidden');
-        input.focus();
-        
-    } else { // short-answer-to-japanese
-        badge.textContent = 'Translate to Japanese';
-        badge.className = 'question-type-badge sa-badge';
-        questionEl.textContent = `What is the Japanese (kanji) for: ${word.english}?`;
-        input.value = '';
-        input.placeholder = 'Type kanji...';
         inputContainer.classList.remove('hidden');
         input.focus();
     }
@@ -451,15 +442,11 @@ function submitAnswer() {
         userAnswer = selectedMCAnswer;
         isCorrect = userAnswer.toLowerCase() === word.english.toLowerCase();
         
-    } else if (currentQuestionType === 'short-answer-to-english') {
+    } else { // short-answer-to-english
         userAnswer = document.getElementById('test-input').value.trim();
         const correctAnswer = word.english.toLowerCase();
         isCorrect = userAnswer.toLowerCase() === correctAnswer || 
                    correctAnswer.split(',').some(ans => ans.trim() === userAnswer.toLowerCase());
-        
-    } else { // short-answer-to-japanese
-        userAnswer = document.getElementById('test-input').value.trim();
-        isCorrect = userAnswer === word.kanji;
     }
     
     const answerStartTime = testStartTime || Date.now();
@@ -499,13 +486,7 @@ function submitAnswer() {
         feedback.textContent = '✓ Correct!';
     } else {
         feedback.classList.add('incorrect');
-        let correctAnswer = '';
-        if (currentQuestionType === 'short-answer-to-japanese') {
-            correctAnswer = word.kanji;
-        } else {
-            correctAnswer = word.english;
-        }
-        feedback.textContent = `✗ Incorrect. The answer is: ${correctAnswer}`;
+        feedback.textContent = `✗ Incorrect. The answer is: ${word.english}`;
     }
     
     // Highlight correct/incorrect MC options
@@ -569,15 +550,7 @@ function showResults() {
     testAnswers.forEach((answer, index) => {
         const className = answer.correct ? 'correct' : 'incorrect';
         const timeSeconds = (answer.timeTaken / 1000).toFixed(1);
-        const typeLabel = answer.questionType === 'multiple-choice' ? 'MC' : 
-                         answer.questionType === 'short-answer-to-english' ? 'SA→EN' : 'SA→JP';
-        
-        let correctAnswer = '';
-        if (answer.questionType === 'short-answer-to-japanese') {
-            correctAnswer = answer.word.kanji;
-        } else {
-            correctAnswer = answer.word.english;
-        }
+        const typeLabel = answer.questionType === 'multiple-choice' ? 'MC' : 'SA';
         
         resultsHTML += `
             <div class="result-item ${className}">
@@ -586,7 +559,7 @@ function showResults() {
                     <strong>${answer.word.kanji}</strong> (${answer.word.romaji})
                     <br>
                     <small>Your answer: ${answer.userAnswer || '(no answer)'}</small>
-                    ${!answer.correct ? `<br><small>Correct: ${correctAnswer}</small>` : ''}
+                    ${!answer.correct ? `<br><small>Correct: ${answer.word.english}</small>` : ''}
                 </div>
                 <div>${timeSeconds}s</div>
             </div>
