@@ -414,6 +414,110 @@ header h1 {
     font-weight: 500;
 }
 
+.unfamiliar-btn {
+    width: 100%;
+    padding: 14px;
+    border: 2px dashed #b0b0b0;
+    border-radius: 0;
+    background: #f8f8f8;
+    color: #7a7a7a;
+    font-weight: 500;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 15px;
+}
+
+.unfamiliar-btn:hover {
+    background: #e8e8e8;
+    border-color: #7a7a7a;
+}
+
+.unfamiliar-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.results-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 25px;
+}
+
+.action-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 0;
+    background: #3d3d3d;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9em;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stats-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 35px;
+}
+
+.stat-card {
+    background: #f8f8f8;
+    padding: 25px 20px;
+    text-align: center;
+    border-radius: 0;
+}
+
+.stat-number {
+    font-size: 2.5em;
+    font-weight: 600;
+    color: #2c2c2c;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 0.85em;
+    color: #7a7a7a;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.search-box {
+    margin-bottom: 25px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid #d0d0d0;
+    border-radius: 0;
+    font-size: 0.95em;
+    font-family: 'Inter', sans-serif;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #3d3d3d;
+}
+
+.keyboard-hint {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    font-size: 0.75em;
+    color: #9a9a9a;
+    opacity: 0.6;
+}
+
 .feedback {
     padding: 18px;
     border-radius: 0;
@@ -544,6 +648,11 @@ header h1 {
 .stat-badge.difficult {
     background: #a0a0a0;
     color: white;
+}
+
+.stat-badge.unfamiliar {
+    background: #d0d0d0;
+    color: #5a5a5a;
 }
 
 .back-btn, .danger-btn {
