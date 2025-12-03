@@ -64,19 +64,6 @@ function initializeEventListeners() {
     document.getElementById('reset-stats-btn').addEventListener('click', resetStatistics);
 }
 
-// File Upload Handler
-function handleFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        parseVocabulary(e.target.result);
-        showModeSelection();
-    };
-    reader.readAsText(file);
-}
-
 // Parse Vocabulary File
 function parseVocabulary(content) {
     const lines = content.split('\n').filter(line => line.trim());
