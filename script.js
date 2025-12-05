@@ -157,11 +157,26 @@ function selectMode(mode) {
     currentMode = mode;
     
     if (mode === 'flashcard' || mode === 'unit-test') {
+        showQuestionTypeSelection();
+    } else if (mode === 'subset-test' || mode === 'subset-flashcard') {
+        showQuestionTypeSelection();
+    }
+}
+
+// Show Question Type Selection
+function showQuestionTypeSelection() {
+    hideAllSections();
+    document.getElementById('question-type-selection').classList.remove('hidden');
+}
+
+// Select Question Mode
+function selectQuestionMode(mode) {
+    questionDisplayMode = mode;
+    
+    if (currentMode === 'flashcard' || currentMode === 'unit-test') {
         showUnitSelection();
-    } else if (mode === 'subset-test') {
+    } else if (currentMode === 'subset-test' || currentMode === 'subset-flashcard') {
         showSubsetSelection();
-    } else if (mode === 'practice-unfamiliar') {
-        startPracticeUnfamiliar();
     }
 }
 
@@ -631,8 +646,50 @@ function updateTestProgress() {
     document.getElementById('test-progress').style.width = progress + '%';
 }
 
-// Show Results
-function showResults() {
+// Save Test
+function saveTest() {
+    const testState = {
+        currentMode,
+        currentUnit,
+        currentSubset,
+        currentTestIndex,
+        testAnswers,
+        currentWords: currentWords.map(w => ({ kanji: w.kanji, romaji: w.romaji, english: w.english })),
+        questionDisplayMode,
+        timestamp: Date.now()
+    };
+    
+    localStorage.setItem(SAVED_TEST_KEY, JSON.stringify(testState));
+    alert('Test saved! You can resume it later from the main menu.');
+    showModeSelection();
+    checkForSavedTest();
+}
+
+// Resume Saved Test
+function resumeSavedTest() {
+    const savedData = localStorage.getItem(SAVED_TEST_KEY);
+    if (!savedData) return;
+    
+    const testState = JSON.parse(savedData);
+    currentMode = testState.currentMode;
+    currentUnit = testState.currentUnit;
+    currentSubset = testState.currentSubset;
+    currentTestIndex = testState.currentTestIndex;
+    testAnswers = testState.testAnswers;
+    currentWords = testState.currentWords;
+    questionDisplayMode = testState.questionDisplayMode;
+    testStartTime = Date.now();
+    
+    hideAllSections();
+    document.getElementById('test-section').classList.remove('hidden');
+    displayQuestion();
+}
+
+// Clear saved test after completion
+function clearSavedTest() {
+    localStorage.removeItem(SAVED_TEST_KEY);
+    checkForSavedTest();
+}
     hideAllSections();
     
     const correctCount = testAnswers.filter(a => a.correct).length;
