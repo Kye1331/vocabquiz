@@ -690,6 +690,8 @@ function clearSavedTest() {
     localStorage.removeItem(SAVED_TEST_KEY);
     checkForSavedTest();
 }
+
+function showResults() {
     hideAllSections();
     
     const correctCount = testAnswers.filter(a => a.correct).length;
