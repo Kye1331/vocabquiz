@@ -32,7 +32,7 @@ async function loadVocabularyFile() {
         showModeSelection();
     } catch (error) {
         console.error('Error loading vocabulary file:', error);
-        alert('Error loading vocabulary.txt. Please make sure the file exists in the same directory.');
+        alert('Error loading vocabulary.txt');
     }
 }
 
